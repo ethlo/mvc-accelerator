@@ -14,6 +14,15 @@ public class MvcAcceleratorConfig {
 
     private final FastPath fastPath = new FastPath();
     private final FilterChain fastFilterChain = new FilterChain();
+    private boolean enabled = true;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public FastPath getFastPath() {
         return fastPath;

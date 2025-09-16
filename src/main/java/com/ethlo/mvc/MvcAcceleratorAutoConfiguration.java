@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @AutoConfiguration
+@ConditionalOnProperty("mvc.accelerator.enabled")
 @EnableConfigurationProperties(MvcAcceleratorConfig.class)
 public class MvcAcceleratorAutoConfiguration {
 
