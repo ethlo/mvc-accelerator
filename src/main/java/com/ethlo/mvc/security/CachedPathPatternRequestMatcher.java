@@ -1,4 +1,4 @@
-package com.ethlo.spring.security;
+package com.ethlo.mvc.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpMethod;
@@ -19,8 +19,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * Instances can be created with:
  * <ul>
  *     <li>A custom {@link RequestMatcher} delegate</li>
- *     <li>A path string (defaults to any HTTP method)</li>
- *     <li>An HTTP method and path string</li>
+ *     <li>A path string (defaults to any HTTP handlerMethod)</li>
+ *     <li>An HTTP handlerMethod and path string</li>
  * </ul>
  * <p>
  * Example usage:

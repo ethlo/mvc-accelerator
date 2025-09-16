@@ -1,43 +1,62 @@
 # MVC Accelerator
 
-**High-performance routing for Spring MVC / Spring Boot 3.5+**
+**High-performance routing for Spring MVC / Spring Boot**
 
-Spring MVC Accelerator provides a minimally invasive way to dramatically improve throughput for high-traffic endpoints. It focuses on:
-
-- Fast handler resolution for “hot” endpoints
-- Caching path parsing for repeated security checks
-- Minimal changes to existing Spring Boot applications
-- Seamless integration with Spring Security
+Spring MVC Accelerator provides a minimally invasive way to dramatically improve throughput for high-traffic endpoints.  
+It introduces a *fast path* through Spring MVC and Spring Security, removing unnecessary overhead while preserving compatibility.
 
 ## Why
 
-Many projects accumulate a large number of endpoints over time, but only a few are truly performance-critical. The Spring MVC stack can be framework-heavy, and the CPU overhead for lightweight endpoints is noticeable. MVC Accelerator addresses this by prioritizing hot paths and reducing repeated computations.
+Most applications only have a handful of truly performance-critical endpoints, but the full Spring MVC + Security stack applies equally to every request.  
+For lightweight endpoints, this overhead dominates request cost. MVC Accelerator addresses this by:
+
+- Prioritizing hot endpoints
+- Skipping unnecessary filter-chain steps
+- Avoiding repeated path parsing
+
+The result: **up to 5–10x higher throughput** for high-frequency APIs such as highly cached or small payload ingestion end-points.
+
+---
 
 ## Features
 
-- `@HighRps` annotation to mark high-throughput endpoints. These endpoints are prioritized when evaluating handler matches.
-- `CachedPathPatternRequestMatcher` for per-request caching of path parsing. Useful when many security patterns or actuator endpoints are active, avoiding repeated evaluation.
-- Preserves existing Spring Security filters and Spring MVC functionality.
-- Fully compatible with Spring Boot 3.5+ and Spring Framework 7.
-- Supports standard request mappings and path variables.
+- **`@HighRps` annotation**  
+  Mark high-throughput endpoints to bypass the normal DispatcherServlet and take the *fast path*.
 
-## Example Usage
+- **Fast-path filter chain**  
+  Configure a minimal subset of Spring Security / custom filters to run before your handler.  
+  All other filters are skipped for fast endpoints, while the correct execution order is preserved.
 
-```java
-@RestController
-@RequestMapping("/demo/performance")
-public class PerformanceDemoController {
+- **Configurable via `application.properties`**  
+  Enable/disable features, define included filters by FQN, and choose whether to fail-fast if required filters are missing.
 
-    @HighRps
-    @GetMapping("/fast/{var1}/{var2}")
-    public String fastPath(@PathVariable String var1,
-                           @PathVariable String var2) {
-        return var1 + " - " + var2;
-    }
+- **`CachedPathPatternRequestMatcher`**  
+  Drop-in replacement for Spring Security’s `PathPatternRequestMatcher` that caches results per-request.  
+  Eliminates repeated parsing when many patterns or actuator endpoints are active.  
+  ⚡ Not auto-wired; explicitly use it in your security config.
 
-    @GetMapping("/normal/{var1}/{var2}")
-    public String normalPath(@PathVariable String var1,
-                             @PathVariable String var2) {
-        return var1 + " - " + var2;
-    }
-}
+- **Spring Boot starter**  
+  Plug-and-play with minimal application changes.
+
+---
+
+## Configuration
+
+```properties
+# Enable fast-path for endpoints annotated with @HighRps
+mvc.accelerator.fast-path.enabled=true
+
+# Enable fast filter-chain mode
+mvc.accelerator.fast-filter-chain.enabled=true
+
+# Fail startup if any required filter is missing (default: true → halt starup, otherwise log warning)
+mvc.accelerator.fast-filter-chain.fail-if-filter-missing=true
+
+# Include all filters
+mvc.accelerator.fast-filter-chain.included-filters=*
+
+# Fully qualified class names of filters to include in the fast-path
+mvc.accelerator.fast-filter-chain.included-filters=\
+  org.springframework.boot.web.servlet.filter.OrderedRequestContextFilter,\
+  org.springframework.security.web.authentication.www.BasicAuthenticationFilter,\
+  org.springframework.security.web.access.ExceptionTranslationFilter
