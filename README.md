@@ -20,7 +20,7 @@ The result: **up to 5–10x higher throughput** for high-frequency APIs such as 
 
 ## Features
 
-- **`@HighRps` annotation**  
+- **`@MvcAccelerator` annotation**  
   Mark high-throughput endpoints to bypass the normal DispatcherServlet and take the *fast path*.
 
 - **Fast-path filter chain**  
@@ -43,7 +43,7 @@ The result: **up to 5–10x higher throughput** for high-frequency APIs such as 
 ## Configuration
 
 ```properties
-# Enable fast-path for endpoints annotated with @HighRps
+# Enable fast-path for endpoints annotated with @MvcAccelerator
 mvc.accelerator.fast-path.enabled=true
 
 # Enable fast filter-chain mode

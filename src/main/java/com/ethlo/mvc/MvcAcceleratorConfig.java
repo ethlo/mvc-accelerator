@@ -24,9 +24,6 @@ public class MvcAcceleratorConfig {
     }
 
     public static class FastPath {
-        /**
-         * Enable fast-path prioritized @HighRps endpoints
-         */
         private boolean enabled = true;
 
         public boolean isEnabled() {

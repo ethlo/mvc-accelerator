@@ -4,7 +4,7 @@ import com.ethlo.mvc.fastpath.EntryParser;
 import com.ethlo.mvc.fastpath.FastEntry;
 import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
 import com.ethlo.mvc.filter.FilterUtils;
-import com.ethlo.mvc.filter.HighRpsFastPathFilter;
+import com.ethlo.mvc.filter.MvcAcceleratorPathFilter;
 import jakarta.servlet.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public class MvcAcceleratorAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty("mvc.accelerator.fast-path.enabled")
-    public MvcAcceleratorHandlerMapping highRpsHandlerMapping(ApplicationContext applicationContext, RequestMappingHandlerMapping requestMappingHandlerMapping) {
+    public MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping(ApplicationContext applicationContext, RequestMappingHandlerMapping requestMappingHandlerMapping) {
         final Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
         final List<FastEntry> fastEntries = handlerMethods
                 .entrySet()
@@ -54,7 +54,7 @@ public class MvcAcceleratorAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty("mvc.accelerator.fast-filter-chain.enabled")
-    public FilterRegistrationBean<Filter> highRpsFastPathFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, MvcAcceleratorHandlerMapping highRpsHandlerMapping, List<HandlerAdapter> handlerAdapters) {
+    public FilterRegistrationBean<Filter> mvcAcceleratorFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping, List<HandlerAdapter> handlerAdapters) {
         final List<String> filtersToKeep = mvcAcceleratorConfig.getFastFilterChain().getIncludedFilters();
         final List<Filter> flatFilters = FilterUtils.flattenFilters(allFilters);
         logger.info("All available filters: {}", flatFilters.stream().map(f -> f.getClass().getName()).toList());
@@ -62,7 +62,7 @@ public class MvcAcceleratorAutoConfiguration {
         logger.info("Allowed filters for fast-path:\n{}", StringUtils.collectionToDelimitedString(filtersToKeep, "\n"));
         logger.info("Actually included filters for fast-path:\n{}", StringUtils.collectionToDelimitedString(selectedFilters.stream().map(Object::getClass).map(Class::getName).toList(), "\n"));
 
-        final HighRpsFastPathFilter filter = new HighRpsFastPathFilter(highRpsHandlerMapping, handlerAdapters, selectedFilters);
+        final MvcAcceleratorPathFilter filter = new MvcAcceleratorPathFilter(mvcAcceleratorHandlerMapping, handlerAdapters, selectedFilters);
         final FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>();
         registration.setFilter(filter);
         registration.setName(MvcAccelerator.class.getSimpleName());
