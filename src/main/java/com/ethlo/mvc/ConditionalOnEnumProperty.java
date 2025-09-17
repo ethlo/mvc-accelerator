@@ -13,5 +13,5 @@ import java.lang.annotation.Target;
 public @interface ConditionalOnEnumProperty {
     String name();
 
-    Mode[] havingValues();
+    MvcAcceleratorConfig.Mode[] havingValues();
 }

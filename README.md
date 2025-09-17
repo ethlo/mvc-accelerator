@@ -1,62 +1,91 @@
-# MVC Accelerator
+# 🚀 Spring MVC Accelerator
 
-**High-performance routing for Spring MVC / Spring Boot**
-
-Spring MVC Accelerator provides a minimally invasive way to dramatically improve throughput for high-traffic endpoints.  
-It introduces a *fast path* through Spring MVC and Spring Security, removing unnecessary overhead while preserving compatibility.
-
-## Why
-
-Most applications only have a handful of truly performance-critical endpoints, but the full Spring MVC + Security stack applies equally to every request.  
-For lightweight endpoints, this overhead dominates request cost. MVC Accelerator addresses this by:
-
-- Prioritizing hot endpoints
-- Skipping unnecessary filter-chain steps
-- Avoiding repeated path parsing
-
-The result: **up to 5–10x higher throughput** for high-frequency APIs such as highly cached or small payload ingestion end-points.
+A minimally invasive library that dramatically improves throughput for your high-traffic Spring Boot endpoints.
 
 ---
 
-## Features
+While the full Spring stack is robust, its overhead can dominate the cost of simple, frequently-hit API calls. This library introduces an optimized **fast path** that bypasses this overhead for the specific endpoints you choose, preserving compatibility while boosting performance.
 
-- **`@MvcAccelerator` annotation**  
-  Mark high-throughput endpoints to bypass the normal DispatcherServlet and take the *fast path*.
+It achieves this by:
+* **Prioritizing hot endpoints** using a simple annotation.
+* **Skipping unnecessary filter-chain steps** for accelerated requests.
+* **Avoiding repeated request path parsing** within the security filter chain.
 
-- **Fast-path filter chain**  
-  Configure a minimal subset of Spring Security / custom filters to run before your handler.  
-  All other filters are skipped for fast endpoints, while the correct execution order is preserved.
+The result is **up to 5–10x higher throughput** for high-frequency APIs, such as endpoints serving cached data or ingesting small payloads.
 
-- **Configurable via `application.properties`**  
-  Enable/disable features, define included filters by FQN, and choose whether to fail-fast if required filters are missing.
+> ### ⚠️ Disclaimer: Use At Your Own Risk
+>
+> This is a high-performance library that achieves speed by bypassing parts of the standard Spring Framework execution path, including elements of the security filter chain.
+>
+> This approach can have **unintended side effects** and may expose your application to security vulnerabilities if not configured and tested correctly. You are solely responsible for understanding the implications and **thoroughly testing** its behavior in your specific environment .
+>
+> This software is provided "as is" with **no warranty** of any kind.
 
-- **`CachedPathPatternRequestMatcher`**  
-  Drop-in replacement for Spring Security’s `PathPatternRequestMatcher` that caches results per-request.  
-  Eliminates repeated parsing when many patterns or actuator endpoints are active.  
-  ⚡ Not auto-wired; explicitly use it in your security config.
+## ✨ Features
 
-- **Spring Boot starter**  
-  Plug-and-play with minimal application changes.
+This starter provides several key features to accelerate your Spring MVC application with minimal setup.
+
+
+
+### Annotation-Driven Fast Path
+
+You can selectively boost performance by marking high-throughput controllers or methods with the **`@MvcAccelerator`** annotation. This allows specific requests to bypass the standard `DispatcherServlet` and take a highly optimized execution path, significantly reducing overhead. This behavior is the default when using `mode: ANNOTATED` in your configuration.
 
 ---
 
-## Configuration
+### Customizable Filter Chain
 
-```properties
-# Enable fast-path for endpoints annotated with @MvcAccelerator
-mvc.accelerator.fast-path.enabled=true
+For accelerated endpoints, you can define a minimal, high-speed filter chain. By specifying which filters to include in your configuration, you can ensure that only essential logic (like security checks) is executed. All other configured servlet filters are skipped for these requests, reducing latency while preserving the correct execution order of the filters you've chosen.
 
-# Enable fast filter-chain mode
-mvc.accelerator.fast-filter-chain.enabled=true
+---
 
-# Fail startup if any required filter is missing (default: true → halt starup, otherwise log warning)
-mvc.accelerator.fast-filter-chain.fail-if-filter-missing=true
+### Optimized Request Matching
 
-# Include all filters
-mvc.accelerator.fast-filter-chain.included-filters=*
+The module includes **`CachedPathPatternRequestMatcher`**, a drop-in replacement for Spring Security’s default `PathPatternRequestMatcher`. It caches the results of pattern matching for the duration of a single request, eliminating redundant parsing work. This is especially effective in applications with numerous security patterns or many actuator endpoints.
 
-# Fully qualified class names of filters to include in the fast-path
-mvc.accelerator.fast-filter-chain.included-filters=\
-  org.springframework.boot.web.servlet.filter.OrderedRequestContextFilter,\
-  org.springframework.security.web.authentication.www.BasicAuthenticationFilter,\
-  org.springframework.security.web.access.ExceptionTranslationFilter
+**Note:** This component is **not** auto-configured. You must explicitly declare it as a bean in your security configuration to activate it.
+
+---
+
+### Simple Integration
+
+As a **Spring Boot starter**, integration is plug-and-play. All features are easily enabled and controlled through your standard `application.yml` or `application.properties` file, allowing you to fine-tune performance without altering your application's core logic.
+
+
+
+## ⚙️ Configuration
+
+You can configure the MVC Accelerator in your `application.yml` or `application.properties` file. All properties are under the `mvc.accelerator` prefix.
+
+---
+
+### Properties
+
+| Property                                                   | Type           | Description                                                                                                                                                             | Default       |
+| ---------------------------------------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `mvc.accelerator.enabled`                                  | `boolean`      | Globally enables or disables the MVC Accelerator feature.                                                                                                               | `true`        |
+| `mvc.accelerator.fast-path.mode`                           | `Enum`         | Sets the operating mode for the fast-path feature. **Possible values:** `ALL` (applies to all requests), `ANNOTATED` (applies only to annotated controllers), `NONE` (disabled). | `ANNOTATED`   |
+| `mvc.accelerator.fast-filter-chain.mode`                   | `Enum`         | Sets the operating mode for the fast-filter-chain feature. **Possible values:** `ALL`, `ANNOTATED`, `NONE`.                                                               | `ANNOTATED`   |
+| `mvc.accelerator.fast-filter-chain.fail-if-filter-missing` | `boolean`      | If `true`, the application will fail to start if a filter specified in `included-filters` cannot be found.                                                              | `true`        |
+| `mvc.accelerator.fast-filter-chain.included-filters`       | `List<String>` | A list of fully qualified class names for Servlet Filters that should be included in the fast-path filter chain.                                                        | `[]`          |
+
+---
+
+### Example `application.yml`
+
+Here is an example configuration that shows different modes and a custom list of filters.
+
+```yaml
+mvc:
+  accelerator:
+    enabled: true
+    fast-path:
+      # Apply fast-path processing to ALL requests
+      mode: ALL
+    fast-filter-chain:
+      # Only apply the fast-filter-chain to ANNOTATED endpoints
+      mode: ANNOTATED
+      fail-if-filter-missing: true
+      included-filters:
+        - com.example.filters.MyCustomLoggingFilter
+        - org.springframework.web.filter.ShallowEtagHeaderFilter

@@ -10,10 +10,19 @@ import java.util.List;
  */
 @Configuration
 @ConfigurationProperties(prefix = "mvc.accelerator")
-public class MvcAcceleratorConfig extends Enabled {
+public class MvcAcceleratorConfig {
 
     private final FastPath fastPath = new FastPath();
     private final FilterChain fastFilterChain = new FilterChain();
+    private boolean enabled = true;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public FastPath getFastPath() {
         return fastPath;
@@ -21,6 +30,10 @@ public class MvcAcceleratorConfig extends Enabled {
 
     public FilterChain getFastFilterChain() {
         return fastFilterChain;
+    }
+
+    public enum Mode {
+        ALL, ANNOTATED, NONE
     }
 
     public static class FastPath extends BaseMode {
@@ -47,6 +60,19 @@ public class MvcAcceleratorConfig extends Enabled {
 
         public FilterChain setFailIfFilterMissing(final boolean failIfFilterMissing) {
             this.failIfFilterMissing = failIfFilterMissing;
+            return this;
+        }
+    }
+
+    public static class BaseMode {
+        private Mode mode = Mode.ANNOTATED;
+
+        public Mode getMode() {
+            return mode;
+        }
+
+        public BaseMode setMode(Mode mode) {
+            this.mode = mode;
             return this;
         }
     }

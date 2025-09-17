@@ -33,7 +33,7 @@ public class MvcAcceleratorAutoConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(MvcAcceleratorAutoConfiguration.class);
 
     @Bean
-    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-path.mode", havingValues = {Mode.ALL, Mode.ANNOTATED})
+    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-path.mode", havingValues = {MvcAcceleratorConfig.Mode.ALL, MvcAcceleratorConfig.Mode.ANNOTATED})
     public MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping(ApplicationContext applicationContext, RequestMappingHandlerMapping requestMappingHandlerMapping, MvcAcceleratorConfig mvcAcceleratorConfig) {
         final Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
         final List<FastEntry> fastEntries = handlerMethods
@@ -52,7 +52,7 @@ public class MvcAcceleratorAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-filter-chain.mode", havingValues = {Mode.ALL, Mode.ANNOTATED})
+    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-filter-chain.mode", havingValues = {MvcAcceleratorConfig.Mode.ALL, MvcAcceleratorConfig.Mode.ANNOTATED})
     public FilterRegistrationBean<Filter> mvcAcceleratorFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping, List<HandlerAdapter> handlerAdapters) {
 
         final List<Map.Entry<Filter, List<RequestMatcher>>> selectedOrderedFilters = prepareFilters(mvcAcceleratorConfig, allFilters);

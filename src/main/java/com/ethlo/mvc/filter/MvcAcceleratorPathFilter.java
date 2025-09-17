@@ -1,7 +1,7 @@
 package com.ethlo.mvc.filter;
 
-import com.ethlo.mvc.Mode;
 import com.ethlo.mvc.MvcAccelerator;
+import com.ethlo.mvc.MvcAcceleratorConfig;
 import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,12 +29,12 @@ public class MvcAcceleratorPathFilter implements Filter {
     private final List<HandlerAdapter> handlerAdapters;
     private final MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping;
     private final List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters;
-    private final Mode mode;
+    private final MvcAcceleratorConfig.Mode mode;
 
     public MvcAcceleratorPathFilter(MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping,
                                     List<HandlerAdapter> handlerAdapters,
                                     List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters,
-                                    Mode mode) {
+                                    MvcAcceleratorConfig.Mode mode) {
         this.mvcAcceleratorHandlerMapping = mvcAcceleratorHandlerMapping;
         this.handlerAdapters = handlerAdapters;
         this.selectedFilters = selectedFilters;
@@ -94,7 +94,7 @@ public class MvcAcceleratorPathFilter implements Filter {
     }
 
     private boolean shouldUseCustomFilter(Object handler) {
-        return mode == Mode.ALL || mode == Mode.ANNOTATED && handler instanceof HandlerMethod handlerMethod && handlerMethod.hasMethodAnnotation(MvcAccelerator.class);
+        return mode == MvcAcceleratorConfig.Mode.ALL || mode == MvcAcceleratorConfig.Mode.ANNOTATED && handler instanceof HandlerMethod handlerMethod && handlerMethod.hasMethodAnnotation(MvcAccelerator.class);
     }
 
     private void invokeHandler(Object handler, HttpServletRequest httpReq, HttpServletResponse httpResp)

@@ -21,7 +21,7 @@ public class OnPropertyEnumCondition implements Condition {
         }
 
         String propertyName = annotation.getString("name");
-        Mode[] accepted = annotation.getEnumArray("havingValues", Mode.class);
+        MvcAcceleratorConfig.Mode[] accepted = annotation.getEnumArray("havingValues", MvcAcceleratorConfig.Mode.class);
 
         String rawValue = context.getEnvironment().getProperty(propertyName);
         if (rawValue == null) {
@@ -29,7 +29,7 @@ public class OnPropertyEnumCondition implements Condition {
         }
 
         try {
-            Mode mode = Mode.valueOf(rawValue.trim().toUpperCase());
+            MvcAcceleratorConfig.Mode mode = MvcAcceleratorConfig.Mode.valueOf(rawValue.trim().toUpperCase());
             return Arrays.asList(accepted).contains(mode);
         } catch (IllegalArgumentException e) {
             return false;

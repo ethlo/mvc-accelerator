@@ -1,7 +1,7 @@
 package com.ethlo.mvc.fastpath;
 
-import com.ethlo.mvc.Mode;
 import com.ethlo.mvc.MvcAccelerator;
+import com.ethlo.mvc.MvcAcceleratorConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.method.HandlerMethod;
@@ -12,10 +12,10 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.ethlo.mvc.Mode.ALL;
+import static com.ethlo.mvc.MvcAcceleratorConfig.Mode.ALL;
 
 public class RequestHandlerMatcherUtil {
-    public static Object getHandlerInternal(Mode mode, HttpServletRequest request, List<FastEntry> entries, PathMatcher pathMatcher) {
+    public static Object getHandlerInternal(MvcAcceleratorConfig.Mode mode, HttpServletRequest request, List<FastEntry> entries, PathMatcher pathMatcher) {
         String requestPath = request.getServletPath();
         List<Match> potentialMatches = new ArrayList<>();
 
