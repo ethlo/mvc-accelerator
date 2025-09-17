@@ -4,16 +4,19 @@ A minimally invasive library that dramatically improves throughput for your high
 
 ---
 
-While the full Spring stack is robust, its overhead can dominate the cost of simple, frequently-hit API calls. This library introduces an optimized **fast path** that bypasses this overhead for the specific endpoints you choose, preserving compatibility while boosting performance.
+While the full Spring stack is robust, its overhead can dominate the cost of simple, frequently-hit API calls. This library introduces an optimized **fast path** to reduce this overhead for the specific endpoints you choose, preserving compatibility while boosting performance.
 
 It achieves this by:
 * **Prioritizing hot endpoints** using a simple annotation.
 * **Skipping unnecessary filter-chain steps** for accelerated requests.
 * **Avoiding repeated request path parsing** within the security filter chain.
 
-The result is **up to 5–10x higher throughput** for high-frequency APIs, such as endpoints serving cached data or ingesting small payloads.
+In benchmarked scenarios, this can result in up to **9× higher throughput**. For example, a minimal echo endpoint on the standard Spring path achieved 5,800 requests per second, but the same endpoint annotated with `@MvcAccelerator` reached **53,000 requests per second**.
 
-> ### ⚠️ Disclaimer: Use At Your Own Risk
+> **Note:** Actual performance gains will vary depending on endpoint complexity, underlying hardware, and JVM tuning. Gains are most pronounced for simple endpoints where framework overhead is the primary bottleneck; complex logic or heavy I/O operations will see smaller improvements.
+
+## ⚠️ Disclaimer: Use At Your Own Risk
+
 >
 > This is a high-performance library that achieves speed by bypassing parts of the standard Spring Framework execution path, including elements of the security filter chain.
 >
