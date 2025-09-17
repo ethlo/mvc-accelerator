@@ -1,10 +1,13 @@
 package com.ethlo.mvc.filter;
 
+import com.ethlo.mvc.Mode;
+import com.ethlo.mvc.MvcAccelerator;
 import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerAdapter;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.ModelAndView;
@@ -26,13 +29,16 @@ public class MvcAcceleratorPathFilter implements Filter {
     private final List<HandlerAdapter> handlerAdapters;
     private final MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping;
     private final List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters;
+    private final Mode mode;
 
     public MvcAcceleratorPathFilter(MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping,
                                     List<HandlerAdapter> handlerAdapters,
-                                    List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters) {
+                                    List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters,
+                                    Mode mode) {
         this.mvcAcceleratorHandlerMapping = mvcAcceleratorHandlerMapping;
         this.handlerAdapters = handlerAdapters;
         this.selectedFilters = selectedFilters;
+        this.mode = mode;
     }
 
     @Override
@@ -44,7 +50,7 @@ public class MvcAcceleratorPathFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         if (!(request instanceof HttpServletRequest httpReq) ||
-            !(response instanceof HttpServletResponse httpResp)) {
+                !(response instanceof HttpServletResponse httpResp)) {
             chain.doFilter(request, response);
             return;
         }
@@ -61,7 +67,6 @@ public class MvcAcceleratorPathFilter implements Filter {
     }
 
     private void doHandle(FilterChain chain, HttpServletRequest httpReq, HttpServletResponse httpResp) throws Exception {
-        // Resolve handler
         HandlerExecutionChain chainExec = mvcAcceleratorHandlerMapping.getHandler(httpReq);
         if (chainExec == null) {
             chain.doFilter(httpReq, httpResp);
@@ -70,19 +75,26 @@ public class MvcAcceleratorPathFilter implements Filter {
 
         final Object handler = chainExec.getHandler();
 
-        if (selectedFilters.isEmpty()) {
-            // No filters → straight-line handler invocation
-            invokeHandler(handler, httpReq, httpResp);
+        if (shouldUseCustomFilter(handler)) {
+            if (selectedFilters.isEmpty()) {
+                invokeHandler(handler, httpReq, httpResp);
+            } else {
+                final List<Filter> applicableFilters = selectedFilters.stream()
+                        .filter(entry -> entry.getValue().stream().anyMatch(matcher -> matcher.matches(httpReq)))
+                        .map(Map.Entry::getKey)
+                        .toList();
+
+                new VirtualFilterChain(applicableFilters, handler, handlerAdapters, httpReq, httpResp)
+                        .doFilter(httpReq, httpResp);
+            }
         } else {
-            // Dynamically find filters where at least one of their RequestMatchers matches the current request
-            final List<Filter> applicableFilters = selectedFilters.stream()
-                    .filter(entry -> entry.getValue().stream().anyMatch(matcher -> matcher.matches(httpReq)))
-                    .map(Map.Entry::getKey)
-                    .toList();
-            // Wrap handler as the final filter
-            new VirtualFilterChain(applicableFilters, handler, handlerAdapters, httpReq, httpResp)
-                    .doFilter(httpReq, httpResp);
+            // Fall back to normal filter chain
+            chain.doFilter(httpReq, httpResp);
         }
+    }
+
+    private boolean shouldUseCustomFilter(Object handler) {
+        return mode == Mode.ALL || mode == Mode.ANNOTATED && handler instanceof HandlerMethod handlerMethod && handlerMethod.hasMethodAnnotation(MvcAccelerator.class);
     }
 
     private void invokeHandler(Object handler, HttpServletRequest httpReq, HttpServletResponse httpResp)

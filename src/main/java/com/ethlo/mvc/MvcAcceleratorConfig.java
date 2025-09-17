@@ -23,10 +23,10 @@ public class MvcAcceleratorConfig extends Enabled {
         return fastFilterChain;
     }
 
-    public static class FastPath extends EnabledMode {
+    public static class FastPath extends BaseMode {
     }
 
-    public static class FilterChain extends EnabledMode {
+    public static class FilterChain extends BaseMode {
         private boolean failIfFilterMissing = true;
         /**
          * Fully qualified class names of filters to include in the fast-path.

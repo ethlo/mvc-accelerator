@@ -1,5 +1,7 @@
 package com.ethlo.mvc.fastpath;
 
+import com.ethlo.mvc.Mode;
+import com.ethlo.mvc.MvcAccelerator;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.method.HandlerMethod;
@@ -10,25 +12,30 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.ethlo.mvc.Mode.ALL;
+
 public class RequestHandlerMatcherUtil {
-    public static Object getHandlerInternal(HttpServletRequest request, List<FastEntry> entries, PathMatcher pathMatcher) {
+    public static Object getHandlerInternal(Mode mode, HttpServletRequest request, List<FastEntry> entries, PathMatcher pathMatcher) {
         String requestPath = request.getServletPath();
         List<Match> potentialMatches = new ArrayList<>();
 
         // Filter candidates and find all valid matches
         for (FastEntry entry : entries) {
-            // Quick prefix check to eliminate most non-matches
-            if (requestPath.startsWith(entry.pathPrefix())) {
-                // Perform the full, correct match against the request
-                RequestMappingInfo matchingCondition = entry.requestMappingInfo().getMatchingCondition(request);
+            final MvcAccelerator mvcAccelerator = entry.mvcAccelerator();
+            if (mode == ALL || mvcAccelerator != null) {
+                // Quick prefix check to eliminate most non-matches
+                if (requestPath.startsWith(entry.pathPrefix())) {
+                    // Perform the full, correct match against the request
+                    RequestMappingInfo matchingCondition = entry.requestMappingInfo().getMatchingCondition(request);
 
-                // A non-null result means it's a valid match
-                if (matchingCondition != null) {
-                    final Match match = new Match(matchingCondition, entry.handlerMethod(), entry.pattern());
-                    if (entry.shortCircuit()) {
-                        return handleBestMatch(request, pathMatcher, match, requestPath);
-                    } else {
-                        potentialMatches.add(match);
+                    // A non-null result means it's a valid match
+                    if (matchingCondition != null) {
+                        final Match match = new Match(matchingCondition, entry.handlerMethod(), entry.pattern());
+                        if (entry.shortCircuit()) {
+                            return handleBestMatch(request, pathMatcher, match, requestPath);
+                        } else {
+                            potentialMatches.add(match);
+                        }
                     }
                 }
             }

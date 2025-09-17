@@ -27,8 +27,6 @@ public class EntryParser {
             return Collections.emptyList();
         }
 
-        // --- GATHER ALL COMBINATIONS ---
-
         // 1. Get all patterns
         final Set<PathPattern> patterns = patternsCondition.getPatterns();
 
@@ -38,7 +36,7 @@ public class EntryParser {
         // 3. Get all producible media types. If none, treat as a single "any" entry (null).
         final ProducesRequestCondition producesCondition = requestMappingInfo.getProducesCondition();
         Set<MediaType> producibleMediaTypes = new HashSet<>();
-        if (producesCondition != null && !producesCondition.getProducibleMediaTypes().isEmpty()) {
+        if (!producesCondition.getProducibleMediaTypes().isEmpty()) {
             producibleMediaTypes.addAll(producesCondition.getProducibleMediaTypes());
         } else {
             // Add a single null entry to represent "any" media type
@@ -50,7 +48,6 @@ public class EntryParser {
         final int order = determineOrder(mvcAccelerator);
         final boolean shortCircuit = determineShortCircuit(mvcAccelerator);
 
-        // --- FLATTEN ALL COMBINATIONS USING NESTED STREAMS ---
         return patterns.stream()
                 .flatMap(pattern -> httpMethods.stream()
                         .flatMap(method -> producibleMediaTypes.stream()
@@ -73,9 +70,8 @@ public class EntryParser {
                                             variableNames,
                                             mediaType, // Each entry is for a single media type
                                             handlerMethod,
-                                            order,
-                                            shortCircuit
-                                            );
+                                            mvcAccelerator
+                                    );
                                 })
                         )
                 )

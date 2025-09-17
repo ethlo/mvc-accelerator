@@ -5,6 +5,8 @@ import com.ethlo.mvc.fastpath.FastEntry;
 import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
 import com.ethlo.mvc.filter.MvcAcceleratorPathFilter;
 import jakarta.servlet.Filter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,9 +29,12 @@ import static com.ethlo.mvc.filter.FilterUtils.prepareFilters;
 @ConditionalOnProperty("mvc.accelerator.enabled")
 @EnableConfigurationProperties(MvcAcceleratorConfig.class)
 public class MvcAcceleratorAutoConfiguration {
+
+    private static final Logger logger = LoggerFactory.getLogger(MvcAcceleratorAutoConfiguration.class);
+
     @Bean
-    @ConditionalOnProperty("mvc.accelerator.fast-path.enabled")
-    public MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping(ApplicationContext applicationContext, RequestMappingHandlerMapping requestMappingHandlerMapping) {
+    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-path.mode", havingValues = {Mode.ALL, Mode.ANNOTATED})
+    public MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping(ApplicationContext applicationContext, RequestMappingHandlerMapping requestMappingHandlerMapping, MvcAcceleratorConfig mvcAcceleratorConfig) {
         final Map<RequestMappingInfo, HandlerMethod> handlerMethods = requestMappingHandlerMapping.getHandlerMethods();
         final List<FastEntry> fastEntries = handlerMethods
                 .entrySet()
@@ -42,12 +47,12 @@ public class MvcAcceleratorAutoConfiguration {
                 })
                 .sorted()
                 .toList();
-
-        return new MvcAcceleratorHandlerMapping(fastEntries);
+        logger.info("Adding MvcAccelerator handler mapping in mode {}", mvcAcceleratorConfig.getFastPath().getMode());
+        return new MvcAcceleratorHandlerMapping(mvcAcceleratorConfig, fastEntries);
     }
 
     @Bean
-    @ConditionalOnProperty("mvc.accelerator.fast-filter-chain.enabled")
+    @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-filter-chain.mode", havingValues = {Mode.ALL, Mode.ANNOTATED})
     public FilterRegistrationBean<Filter> mvcAcceleratorFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping, List<HandlerAdapter> handlerAdapters) {
 
         final List<Map.Entry<Filter, List<RequestMatcher>>> selectedOrderedFilters = prepareFilters(mvcAcceleratorConfig, allFilters);
@@ -55,7 +60,8 @@ public class MvcAcceleratorAutoConfiguration {
         final MvcAcceleratorPathFilter filter = new MvcAcceleratorPathFilter(
                 mvcAcceleratorHandlerMapping,
                 handlerAdapters,
-                selectedOrderedFilters
+                selectedOrderedFilters,
+                mvcAcceleratorConfig.getFastFilterChain().getMode()
         );
 
         final FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>();
@@ -64,6 +70,9 @@ public class MvcAcceleratorAutoConfiguration {
 
         // Run before Spring Security filter chain
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+
+        logger.info("Adding MvcAccelerator filter handler in mode {}", mvcAcceleratorConfig.getFastFilterChain().getMode());
+
         return registration;
     }
 }

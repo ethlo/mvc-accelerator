@@ -1,5 +1,6 @@
 package com.ethlo.mvc.fastpath;
 
+import com.ethlo.mvc.MvcAccelerator;
 import org.springframework.http.MediaType;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -14,11 +15,17 @@ public record FastEntry(
         List<String> variableNames, // ["var1","var2"]
         MediaType produces,
         HandlerMethod handlerMethod,
-        int order,
-
-        boolean shortCircuit) implements Comparable<FastEntry> {
+        MvcAccelerator mvcAccelerator) implements Comparable<FastEntry> {
     @Override
     public int compareTo(FastEntry o) {
-        return Integer.compare(order, o.order);
+        return Integer.compare(order(), o.order());
+    }
+
+    public int order() {
+        return mvcAccelerator != null ? mvcAccelerator.order() : 0;
+    }
+
+    public boolean shortCircuit() {
+        return mvcAccelerator != null && mvcAccelerator.shortCircuit();
     }
 }

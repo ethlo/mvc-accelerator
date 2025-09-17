@@ -1,6 +1,7 @@
 package com.ethlo.mvc.filter;
 
 import com.ethlo.mvc.MvcAcceleratorConfig;
+import com.ethlo.mvc.security.CachedPathPatternRequestMatcher;
 import jakarta.servlet.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +80,7 @@ public final class FilterUtils {
         for (Filter f : filters) {
             if (f instanceof FilterChainProxy fcp) {
                 fcp.getFilterChains().forEach(chain -> {
-                    orderedMap.computeIfAbsent(extractMatcher(chain), k -> new ArrayList<>())
+                    orderedMap.computeIfAbsent(new CachedPathPatternRequestMatcher(extractMatcher(chain)), k -> new ArrayList<>())
                             .addAll(chain.getFilters());
                 });
             } else if (f.getClass().getSimpleName().equals("CompositeFilter")) {
