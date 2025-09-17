@@ -51,9 +51,8 @@ public class RequestHandlerMatcherUtil {
     }
 
     private static HandlerExecutionChain handleBestMatch(HttpServletRequest request, PathMatcher pathMatcher, Match bestMatch, String requestPath) {
-        HandlerMethod handler = bestMatch.handlerMethod();
-
-        String bestPattern = bestMatch.pattern();
+        final HandlerMethod handler = bestMatch.handlerMethod();
+        final String bestPattern = bestMatch.pattern();
         request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, bestPattern);
         request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
                 pathMatcher.extractUriTemplateVariables(bestPattern, requestPath));

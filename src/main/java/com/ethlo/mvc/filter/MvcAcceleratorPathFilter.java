@@ -4,6 +4,7 @@ import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.servlet.HandlerAdapter;
 import org.springframework.web.servlet.HandlerExecutionChain;
 import org.springframework.web.servlet.ModelAndView;
@@ -11,6 +12,7 @@ import org.springframework.web.util.ServletRequestPathUtils;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Executes a minimal/optimized MVC path for high-RPS endpoints.
@@ -23,11 +25,11 @@ import java.util.List;
 public class MvcAcceleratorPathFilter implements Filter {
     private final List<HandlerAdapter> handlerAdapters;
     private final MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping;
-    private final List<Filter> selectedFilters;
+    private final List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters;
 
     public MvcAcceleratorPathFilter(MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping,
                                     List<HandlerAdapter> handlerAdapters,
-                                    List<Filter> selectedFilters) {
+                                    List<Map.Entry<Filter, List<RequestMatcher>>> selectedFilters) {
         this.mvcAcceleratorHandlerMapping = mvcAcceleratorHandlerMapping;
         this.handlerAdapters = handlerAdapters;
         this.selectedFilters = selectedFilters;
@@ -72,8 +74,13 @@ public class MvcAcceleratorPathFilter implements Filter {
             // No filters → straight-line handler invocation
             invokeHandler(handler, httpReq, httpResp);
         } else {
+            // Dynamically find filters where at least one of their RequestMatchers matches the current request
+            final List<Filter> applicableFilters = selectedFilters.stream()
+                    .filter(entry -> entry.getValue().stream().anyMatch(matcher -> matcher.matches(httpReq)))
+                    .map(Map.Entry::getKey)
+                    .toList();
             // Wrap handler as the final filter
-            new VirtualFilterChain(selectedFilters, handler, handlerAdapters, httpReq, httpResp)
+            new VirtualFilterChain(applicableFilters, handler, handlerAdapters, httpReq, httpResp)
                     .doFilter(httpReq, httpResp);
         }
     }
@@ -96,52 +103,4 @@ public class MvcAcceleratorPathFilter implements Filter {
         // no-op
     }
 
-    /**
-     * Executes filters in order, then invokes the handler as the final element.
-     */
-    public static class VirtualFilterChain implements FilterChain {
-        private final List<Filter> filters;
-        private final Object handler;
-        private final List<HandlerAdapter> handlerAdapters;
-        private final HttpServletRequest request;
-        private final HttpServletResponse response;
-        private int pos = 0;
-
-        public VirtualFilterChain(List<Filter> filters,
-                                  Object handler,
-                                  List<HandlerAdapter> handlerAdapters,
-                                  HttpServletRequest request,
-                                  HttpServletResponse response) {
-            this.filters = filters;
-            this.handler = handler;
-            this.handlerAdapters = handlerAdapters;
-            this.request = request;
-            this.response = response;
-        }
-
-        @Override
-        public void doFilter(ServletRequest req, ServletResponse res) throws IOException, ServletException {
-            if (pos < filters.size()) {
-                Filter next = filters.get(pos++);
-                next.doFilter(req, res, this);
-            } else {
-                // Invoke handler inside the filter chain
-                try {
-                    HandlerAdapter adapter = handlerAdapters.stream()
-                            .filter(ha -> ha.supports(handler))
-                            .findFirst()
-                            .orElseThrow(() -> new ServletException("No adapter for " + handler));
-
-                    ModelAndView mv = adapter.handle(request, response, handler);
-                    if (mv != null && !mv.wasCleared()) {
-                        throw new ServletException("View rendering not supported in fast path");
-                    }
-                } catch (ServletException | IOException exc) {
-                    throw exc;
-                } catch (Exception exc) {
-                    throw new ServletException(exc);
-                }
-            }
-        }
-    }
 }
