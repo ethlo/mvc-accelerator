@@ -1,9 +1,14 @@
-package com.ethlo.mvc;
+package com.ethlo.mvc.config;
 
+import com.ethlo.mvc.MvcAccelerator;
+import com.ethlo.mvc.demo.PerformanceDemoController;
 import com.ethlo.mvc.fastpath.EntryParser;
 import com.ethlo.mvc.fastpath.FastEntry;
 import com.ethlo.mvc.fastpath.MvcAcceleratorHandlerMapping;
+import com.ethlo.mvc.filter.FilterUtils;
 import com.ethlo.mvc.filter.MvcAcceleratorPathFilter;
+import com.ethlo.mvc.interceptor.InterceptorRequestMatcher;
+import com.ethlo.mvc.interceptor.InterceptorUtils;
 import jakarta.servlet.Filter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +22,12 @@ import org.springframework.core.Ordered;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerAdapter;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.util.List;
 import java.util.Map;
-
-import static com.ethlo.mvc.filter.FilterUtils.prepareFilters;
 
 @AutoConfiguration
 @ConditionalOnProperty("mvc.accelerator.enabled")
@@ -31,6 +35,12 @@ import static com.ethlo.mvc.filter.FilterUtils.prepareFilters;
 public class MvcAcceleratorAutoConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(MvcAcceleratorAutoConfiguration.class);
+
+    @ConditionalOnProperty("mvc.accelerator.demo.enabled")
+    @Bean
+    public PerformanceDemoController performanceDemoController() {
+        return new PerformanceDemoController();
+    }
 
     @Bean
     @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-path.mode", havingValues = {MvcAcceleratorConfig.Mode.ALL, MvcAcceleratorConfig.Mode.ANNOTATED})
@@ -53,13 +63,14 @@ public class MvcAcceleratorAutoConfiguration {
 
     @Bean
     @ConditionalOnEnumProperty(name = "mvc.accelerator.fast-filter-chain.mode", havingValues = {MvcAcceleratorConfig.Mode.ALL, MvcAcceleratorConfig.Mode.ANNOTATED})
-    public FilterRegistrationBean<Filter> mvcAcceleratorFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping, List<HandlerAdapter> handlerAdapters) {
+    public FilterRegistrationBean<Filter> mvcAcceleratorFilter(MvcAcceleratorConfig mvcAcceleratorConfig, List<Filter> allFilters, List<HandlerInterceptor> allInterceptors, MvcAcceleratorHandlerMapping mvcAcceleratorHandlerMapping, List<HandlerAdapter> handlerAdapters) {
 
-        final List<Map.Entry<Filter, List<RequestMatcher>>> selectedOrderedFilters = prepareFilters(mvcAcceleratorConfig, allFilters);
-
+        final List<Map.Entry<Filter, List<RequestMatcher>>> selectedOrderedFilters = FilterUtils.prepareFilters(mvcAcceleratorConfig, allFilters);
+        final List<Map.Entry<HandlerInterceptor, List<InterceptorRequestMatcher>>> selectedInterceptors = InterceptorUtils.prepareInterceptors(mvcAcceleratorConfig, allInterceptors);
         final MvcAcceleratorPathFilter filter = new MvcAcceleratorPathFilter(
                 mvcAcceleratorHandlerMapping,
                 handlerAdapters,
+                selectedInterceptors,
                 selectedOrderedFilters,
                 mvcAcceleratorConfig.getFastFilterChain().getMode()
         );

@@ -2,8 +2,11 @@ package com.ethlo.mvc.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.server.PathContainer;
+import org.springframework.http.server.RequestPath;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.util.ServletRequestPathUtils;
 
 /**
  * A {@link RequestMatcher} wrapper that caches the {@link MatchResult} for a given
@@ -31,31 +34,38 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * }
  * }</pre>
  */
-public class CachedPathPatternRequestMatcher implements RequestMatcher {
-    private static final String ATTR = CachedPathPatternRequestMatcher.class.getName() + ".MATCH_RESULT";
+
+public final class CachedPathPatternRequestMatcher implements RequestMatcher {
+    private static final String ATTR = CachedPathPatternRequestMatcher.class.getName() + ".PATH_CONTAINER";
+
     private final RequestMatcher delegate;
 
+    /**
+     * Wrap any RequestMatcher
+     */
     public CachedPathPatternRequestMatcher(RequestMatcher delegate) {
         this.delegate = delegate;
     }
 
-    public CachedPathPatternRequestMatcher(final String path) {
-        this.delegate = PathPatternRequestMatcher.withDefaults().matcher(path);
+    /**
+     * Build a delegate matcher from method + pattern
+     */
+    public CachedPathPatternRequestMatcher(HttpMethod method, String pattern) {
+        this.delegate = PathPatternRequestMatcher.withDefaults().matcher(method, pattern);
     }
 
-    public CachedPathPatternRequestMatcher(HttpMethod method, String path) {
-        this.delegate = PathPatternRequestMatcher.withDefaults().matcher(method, path);
+    /**
+     * Build a delegate matcher from pattern only
+     */
+    public CachedPathPatternRequestMatcher(String pattern) {
+        this.delegate = PathPatternRequestMatcher.withDefaults().matcher(pattern);
     }
 
     @Override
     public MatchResult matcher(HttpServletRequest request) {
-        Object cached = request.getAttribute(ATTR);
-        if (cached instanceof MatchResult result) {
-            return result;
-        }
-        MatchResult result = delegate.matcher(request);
-        request.setAttribute(ATTR, result);
-        return result;
+        // Ensure the RequestPath and subPath are cached
+        getCachedPathContainer(request);
+        return delegate.matcher(request);
     }
 
     @Override
@@ -63,8 +73,26 @@ public class CachedPathPatternRequestMatcher implements RequestMatcher {
         return matcher(request).isMatch();
     }
 
+    private PathContainer getCachedPathContainer(HttpServletRequest request) {
+        PathContainer cached = (PathContainer) request.getAttribute(ATTR);
+        if (cached != null)
+        {
+            return cached;
+        }
+
+        RequestPath path = ServletRequestPathUtils.hasParsedRequestPath(request)
+                ? ServletRequestPathUtils.getParsedRequestPath(request)
+                : ServletRequestPathUtils.parseAndCache(request);
+
+        PathContainer contextPath = path.contextPath();
+        PathContainer sub = path.subPath(contextPath.elements().size());
+
+        request.setAttribute(ATTR, sub);
+        return sub;
+    }
+
     @Override
     public String toString() {
-        return "Cached" + delegate.toString();
+        return "Cached(" + delegate + ")";
     }
 }

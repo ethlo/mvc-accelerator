@@ -1,4 +1,4 @@
-package com.ethlo.mvc;
+package com.ethlo.mvc.config;
 
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;

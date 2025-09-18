@@ -1,7 +1,7 @@
 package com.ethlo.mvc.fastpath;
 
 import com.ethlo.mvc.MvcAccelerator;
-import com.ethlo.mvc.MvcAcceleratorConfig;
+import com.ethlo.mvc.config.MvcAcceleratorConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

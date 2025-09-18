@@ -1,6 +1,6 @@
 package com.ethlo.mvc.filter;
 
-import com.ethlo.mvc.MvcAcceleratorConfig;
+import com.ethlo.mvc.config.MvcAcceleratorConfig;
 import com.ethlo.mvc.security.CachedPathPatternRequestMatcher;
 import jakarta.servlet.Filter;
 import org.slf4j.Logger;
