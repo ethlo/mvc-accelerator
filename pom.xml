@@ -13,6 +13,14 @@
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.5</version>
     </parent>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
