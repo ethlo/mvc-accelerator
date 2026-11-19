@@ -6,7 +6,11 @@
 
     <groupId>com.ethlo.web</groupId>
     <artifactId>mvc-accelerator</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <!-- Stays 0-SNAPSHOT: the release workflow sets the version from the tag -->
+    <version>0-SNAPSHOT</version>
+    <name>Spring MVC Accelerator</name>
+    <description>Fast path for selected Spring MVC endpoints: caches routing and security matcher results to cut per-request overhead.</description>
+    <url>https://github.com/ethlo/mvc-accelerator</url>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -20,6 +24,17 @@
             <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
         </license>
     </licenses>
+    <developers>
+        <developer>
+            <name>Morten Haraldsen</name>
+            <url>https://ethlo.com</url>
+        </developer>
+    </developers>
+    <scm>
+        <url>https://github.com/ethlo/mvc-accelerator</url>
+        <connection>scm:git:https://github.com/ethlo/mvc-accelerator.git</connection>
+        <developerConnection>scm:git:git@github.com:ethlo/mvc-accelerator.git</developerConnection>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -60,6 +75,85 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <gpg.skip>true</gpg.skip>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <properties>
+                <gpg.skip>false</gpg.skip>
+            </properties>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <show>public</show>
+                    <quiet>true</quiet>
+                    <doclint>all,-missing</doclint>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.7</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>gpg</executable>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.10.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>validated</waitUntil>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.21.0</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
